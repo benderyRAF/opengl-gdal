@@ -83,7 +83,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>C:\Users\BENDERY\Desktop\opengl-gdal\opengl-gdal\code\include;C:\Users\BENDERY\Desktop\gdal-3.5.1\gcore;C:\Users\BENDERY\Desktop\gdal-3.5.1\ogr;C:\Users\BENDERY\Desktop\gdal-3.5.1\port;C:\Users\BENDERY\Desktop\gdal-3.5.1\apps;C:\Users\BENDERY\Desktop\gdal-3.5.1\;C:\Users\BENDERY\Desktop\gdal-3.5.1\ogr\ogrsf_frmts;C:\Users\BENDERY\Desktop\gdal-3.5.1\alg;C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.29.30133\bin\Hostx64\x86\;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)\opengl-gdal\code\include;$(SolutionDir)\gdal-3.5.1\gcore;$(SolutionDir)\gdal-3.5.1\ogr;$(SolutionDir)\gdal-3.5.1\port;$(SolutionDir)\gdal-3.5.1\apps;$(SolutionDir)\gdal-3.5.1\;$(SolutionDir)\gdal-3.5.1\ogr\ogrsf_frmts;$(SolutionDir)\gdal-3.5.1\alg;C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.29.30133\bin\Hostx64\x86\;$(IncludePath)</IncludePath>
     <ReferencePath>C:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\x86;$(ReferencePath)</ReferencePath>
     <SourcePath>C:\Program Files (x86)\Windows Kits\10\bin\10.0.19041.0\x86;$(SourcePath)</SourcePath>
   </PropertyGroup>
@@ -129,7 +129,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>C:\Users\BENDERY\Desktop\opengl-gdal\packages\freeglut.2.8.1.15\build\native\lib\v110\x64\Release\dynamic\freeglut.lib;C:\Users\BENDERY\Desktop\opengl-gdal\packages\glew.1.9.0.1\build\native\lib\v110\x64\Release\static\glew.lib;C:\Users\BENDERY\Desktop\gdal-3.5.1\gdal_i_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)\packages\freeglut.2.8.1.15\build\native\lib\v110\x64\Release\dynamic\freeglut.lib;$(SolutionDir)\packages\glew.1.9.0.1\build\native\lib\v110\x64\Release\static\glew.lib;$(SolutionDir)\gdal-3.5.1\gdal_i_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
