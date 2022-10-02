@@ -24,8 +24,8 @@ void terrain::setup()
 	createMesh(vecs, xres, yres, max, indicies, vertexes);
 
 	Renderer.init();
-	Renderer.addShader(GL_VERTEX_SHADER, AssetManager::GetAppPath() + "../../code/shader/terrain.vert");
-	Renderer.addShader(GL_FRAGMENT_SHADER, AssetManager::GetAppPath() + "../../code/shader/terrain.frag");
+	Renderer.addShader(GL_VERTEX_SHADER, AssetManager::GetAppPath() + "../../../../code/shader/terrain.vert");
+	Renderer.addShader(GL_FRAGMENT_SHADER, AssetManager::GetAppPath() + "../../../../code/shader/terrain.frag");
 	cout << Renderer.compile() << endl;
 	cout << Renderer.link() << endl;
 

@@ -20,16 +20,31 @@
 #include <terrain.h>
 #include <triangle.h>
 
+//#define GLM_FORCE_RADIANS
+#include <iostream>
+
+#include <AssetManager.h>
+#include <renderer.h>
+#include <iostream>
+#include <buffer.h>
+#include <triangle.h>
+#include <gishandler.h>
+#include <vector>
+#include <camera.h>
+#include <chrono>
+#include <terrain.h>
+#include <gbuffer.h>
+#include <framerenderer.h>
+#include <shape.h>
+#include <projector.h>
 //Screen dimension constants
-const int SCREEN_WIDTH = 640;
-const int SCREEN_HEIGHT = 480;
+const int SCREEN_WIDTH = 1920;
+const int SCREEN_HEIGHT = 1080;
 using namespace std;
 using namespace chrono;
+int currentprojector = 0;
 
-int lastx = 0;
-int lasty = 0;
-bool movementSwitch = false;
-float Vertices[9] = {0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0};
+float Vertices[9] = { 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0 };
 
 string ErrorString(GLenum error)
 {
@@ -37,18 +52,22 @@ string ErrorString(GLenum error)
 	{
 		return "GL_INVALID_ENUM: An unacceptable value is specified for an enumerated argument.";
 	}
+
 	else if (error == GL_INVALID_VALUE)
 	{
 		return "GL_INVALID_VALUE: A numeric argument is out of range.";
 	}
+
 	else if (error == GL_INVALID_OPERATION)
 	{
 		return "GL_INVALID_OPERATION: The specified operation is not allowed in the current state.";
 	}
+
 	else if (error == GL_INVALID_FRAMEBUFFER_OPERATION)
 	{
 		return "GL_INVALID_FRAMEBUFFER_OPERATION: The framebuffer object is not complete.";
 	}
+
 	else if (error == GL_OUT_OF_MEMORY)
 	{
 		return "GL_OUT_OF_MEMORY: There is not enough memory left to execute the command.";
@@ -66,7 +85,7 @@ bool init();
 bool initGL();
 
 //Input handler
-void handleKeys( unsigned char key, int x, int y )
+void handleKeys(unsigned char key, int x, int y)
 {};
 
 void HandleEvents(SDL_Event e, float dt = 0);
@@ -92,9 +111,20 @@ bool gRenderQuad = true;
 camera Camera;
 
 framerenderer fr;
-
-//string fname = "../data/output_srtm.tif"; //1m_DTM.tif";
+projector pr;
+projector pr2;
+projector pr3;
+projector pr4;
+projector pr5;
+projector pr6;
+projector pr7;
+vector<projector> projectors = vector<projector>();
 terrain Terrain;
+
+// A memento to the shapfiles..
+shape shap;
+shape shap2;
+shape shap3;
 
 GLint VaoId;
 
@@ -104,32 +134,53 @@ bool quit;
 
 int main(int argc, char** argv)
 {
+	GLuint test;
+
 	renderer Renderer = renderer();
 
 	string appPath = argv[0];
 	cout << argv[0] << endl;
-
-    int lastSlash = appPath.find_last_of('\\');
-    int exeLength = appPath.length() - lastSlash - 1;
-    appPath.erase(appPath.end() - exeLength, appPath.end());
+	appPath.erase(appPath.end() - 3, appPath.end());
 
 	// Lets set the application path for this guy
 	AssetManager::SetAppPath(appPath);
-
+	cout << "HERE @" << endl;
 
 	current = high_resolution_clock::now();
 	high_resolution_clock::time_point past = high_resolution_clock::now();
 
 	//Start up SDL and create window
-	if ( !init() )
+	if (!init())
 	{
-		printf( "Failed to initialize!\n" );
+		printf("Failed to initialize!\n");
 	}
 	else
 	{
 		cout << "INITIALIZED" << endl;
-		Terrain.SetFile(AssetManager::GetAppPath() + "../../data/drycreek.tif");
+
+		Terrain.SetFile(AssetManager::GetAppPath() + "../../../../data/drycreek2.tif");
 		Terrain.setup();
+		shap.load(AssetManager::GetAppPath() + "../../../../data/streamDCEW2/stream2.shp");
+		shap.createMesh(Terrain.GetProjection(), Terrain.GetOrigin(), glm::vec2(1, 1), Terrain);
+		shap2.load(AssetManager::GetAppPath() + "../../../../data/boundDCEW/boundDCEW.shp");
+		shap2.createMesh(Terrain.GetProjection(), Terrain.GetOrigin(), glm::vec2(1, 1), Terrain);
+		shap3.load(AssetManager::GetAppPath() + "../../../../data/sitesDCEW2012/DCEWsites2013.shp");
+		shap3.createMesh(Terrain.GetProjection(), Terrain.GetOrigin(), glm::vec2(1, 1), Terrain);
+
+		pr.setToMainCoordinateSystem(Terrain.GetProjection(), Terrain.GetOrigin());
+		pr2.setToMainCoordinateSystem(Terrain.GetProjection(), Terrain.GetOrigin());
+		pr3.setToMainCoordinateSystem(Terrain.GetProjection(), Terrain.GetOrigin());
+		pr4.setToMainCoordinateSystem(Terrain.GetProjection(), Terrain.GetOrigin());
+		pr5.setToMainCoordinateSystem(Terrain.GetProjection(), Terrain.GetOrigin());
+		pr6.setToMainCoordinateSystem(Terrain.GetProjection(), Terrain.GetOrigin());
+		pr7.setToMainCoordinateSystem(Terrain.GetProjection(), Terrain.GetOrigin());
+		projectors.push_back(pr);
+		projectors.push_back(pr2);
+		projectors.push_back(pr3);
+		projectors.push_back(pr4);
+		projectors.push_back(pr5);
+		projectors.push_back(pr6);
+		projectors.push_back(pr7);
 		//Main loop flag
 		quit = false;
 
@@ -140,19 +191,19 @@ int main(int argc, char** argv)
 		SDL_StartTextInput();
 
 		//While application is running
-		while ( !quit )
+		while (!quit)
 		{
+
 			current = high_resolution_clock::now();
 			duration<double> time_span = duration_cast<duration<double>>(current - past);
-			//Handle events on queue
 
+			//Handle events on queue
 			if (time_span.count() <= 1.0 / 30.0)
 			{
 				continue;
 			}
-			//past = current
-			//cout << time_span.count();
-			while ( SDL_PollEvent( &e ) != 0 )
+
+			while (SDL_PollEvent(&e) != 0)
 			{
 				HandleEvents(e, time_span.count());
 			}
@@ -160,20 +211,21 @@ int main(int argc, char** argv)
 
 
 			// Update first
-			update();
+ 			update();
 
 			// Now render
 			render();
 
+			//gl error in reander
 			auto error = glGetError();
-			if ( error != GL_NO_ERROR )
+			if (error != GL_NO_ERROR)
 			{
-				cout << "Error initializing OpenGL! " << gluErrorString( error )  << endl;
+				cout << "Error initializing OpenGL! " << gluErrorString(error) << endl;
 
 			}
 
 			//Update screen
-			SDL_GL_SwapWindow( gWindow );
+			SDL_GL_SwapWindow(gWindow);
 			past = current;
 		}
 
@@ -196,35 +248,35 @@ bool init()
 	bool success = true;
 
 	//Initialize SDL
-	if ( SDL_Init( SDL_INIT_VIDEO ) < 0 )
+	if (SDL_Init(SDL_INIT_VIDEO) < 0)
 	{
-		printf( "SDL could not initialize! SDL Error: %s\n", SDL_GetError() );
+		printf("SDL could not initialize! SDL Error: %s\n", SDL_GetError());
 		success = false;
 	}
 	else
 	{
 		//Use OpenGL 3.3 -- Make sure you have a graphics card that supports 3.3
-		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 3 );
-		SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 3 );
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-		SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 5 );
-		SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 5 );
-		SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 5 );
+		SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 5);
+		SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 5);
+		SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 5);
 
 		//Create window
-		gWindow = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN );
-		if ( gWindow == NULL )
+		gWindow = SDL_CreateWindow("Tutorial 4", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
+		if (gWindow == NULL)
 		{
-			printf( "Window could not be created! SDL Error: %s\n", SDL_GetError() );
+			printf("Window could not be created! SDL Error: %s\n", SDL_GetError());
 			success = false;
 		}
 		else
 		{
 			//Create context
-			gContext = SDL_GL_CreateContext( gWindow );
-			if ( gContext == NULL )
+			gContext = SDL_GL_CreateContext(gWindow);
+			if (gContext == NULL)
 			{
-				printf( "OpenGL context could not be created! SDL Error: %s\n", SDL_GetError() );
+				printf("OpenGL context could not be created! SDL Error: %s\n", SDL_GetError());
 				success = false;
 			}
 			else
@@ -234,39 +286,70 @@ bool init()
 
 
 				//Use Vsync
-				if ( SDL_GL_SetSwapInterval( 1 ) < 0 )
+				if (SDL_GL_SetSwapInterval(1) < 0)
 				{
-					printf( "Warning: Unable to set VSync! SDL Error: %s\n", SDL_GetError() );
+					printf("Warning: Unable to set VSync! SDL Error: %s\n", SDL_GetError());
 				}
 				t = glGetError();
 				cout << ErrorString(t) << endl;
 
-				#if !defined(__APPLE__) && !defined(MACOSX)
+#if !defined(__APPLE__) && !defined(MACOSX)
 				cout << glewGetString(GLEW_VERSION) << endl;
 				glewExperimental = GL_TRUE;
 
 				auto status = glewInit();
+
 				//Check for error
 				if (status != GLEW_OK)
 				{
-					//std::cerr << "GLEW Error: " << glewGetErrorString(status) << "\n";
+					std::cerr << "GLEW Error: " << glewGetErrorString(status) << "\n";
 					success = false;
 				}
-				#endif
-				
+#endif
+
 				t = glGetError();
 				cout << ErrorString(t) << endl;
 				//Initialize OpenGL
-				if ( !initGL() )
+				if (!initGL())
 				{
-					printf( "OUCH Unable to initialize OpenGL!\n" );
+					printf("OUCH Unable to initialize OpenGL!\n");
 					success = false;
 				}
 
 				//cout << glGetString(GL_VERSION) << endl;
 				cout << "GUFFER SUCCESS: " << GBuffer::Init(SCREEN_WIDTH, SCREEN_HEIGHT) << endl;
+
 				fr.setup();
 				fr.setScreenDims(SCREEN_WIDTH, SCREEN_HEIGHT);
+				//fr.setHasProj(-1); // we need to project something
+
+				pr.setFile(AssetManager::GetAppPath() + "../../../../data/satellite/res.tif");
+				pr.setup();
+				pr.setScreenDims(SCREEN_WIDTH, SCREEN_HEIGHT);
+
+				pr2.setFile(AssetManager::GetAppPath() + "../../../../data/satellite/res2.tif");
+				pr2.setup();
+				pr2.setScreenDims(SCREEN_WIDTH, SCREEN_HEIGHT);
+
+				pr3.setFile(AssetManager::GetAppPath() + "../../../../data/satellite/res3.tif");
+				pr3.setup();
+				pr3.setScreenDims(SCREEN_WIDTH, SCREEN_HEIGHT);
+
+				pr4.setFile(AssetManager::GetAppPath() + "../../../../data/satellite/res4.tif");
+				pr4.setup();
+				pr4.setScreenDims(SCREEN_WIDTH, SCREEN_HEIGHT);
+
+				pr5.setFile(AssetManager::GetAppPath() + "../../../../data/satellite/res5.tif");
+				pr5.setup();
+				pr5.setScreenDims(SCREEN_WIDTH, SCREEN_HEIGHT);
+
+				pr6.setFile(AssetManager::GetAppPath() + "../../../../data/satellite/res6.tif");
+				pr6.setup();
+				pr6.setScreenDims(SCREEN_WIDTH, SCREEN_HEIGHT);
+				pr7.setmask(AssetManager::GetAppPath() + "../../../../data/tl2p5mask.ipw.tif");
+				pr7.setFile(AssetManager::GetAppPath() + "../../../../data/em.1000.tif", projector::PROJECTOR_TYPE::DATA);
+				pr7.setup();
+				pr7.setScreenDims(SCREEN_WIDTH, SCREEN_HEIGHT);
 			}
 		}
 	}
@@ -281,14 +364,15 @@ bool initGL()
 {
 	GLenum error = GL_NO_ERROR;
 	bool success = true;
+
 	//Initialize clear color
-	glClearColor( 0.f, 0.f, 1.f, 1.f );
+	glClearColor(0.f, 0.f, 1.f, 1.f);
 
 
 	error = glGetError();
-	if ( error != GL_NO_ERROR )
+	if (error != GL_NO_ERROR)
 	{
-		printf( "Error initializing OpenGL! %s\n", gluErrorString( error ) );
+		printf("Error initializing OpenGL! %s\n", gluErrorString(error));
 		success = false;
 	}
 
@@ -306,30 +390,59 @@ void render()
 	fr.SetCameraPos(Camera.getPos());
 	glm::mat4 view = Camera.getView();
 	glm::mat4 projection = Camera.getProjection();
+
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-	glClearColor( 0.f, 0.f, 0.5f, 0.f );
+
+
 	fr.render(view, projection);
 
-	GBuffer::BindForWriting();
+	
+	glEnable(GL_BLEND);
+	
 
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	
+	
+	for (int i = 0; i < projectors.size(); i++)
+	{
+		projectors[i].render(view, projection);
+	}
+
+	//---- gL ERROR
+
+	glDisable(GL_BLEND);
+
+
+
+	GBuffer::BindForWriting();
 	glDepthMask(GL_TRUE);
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_FRONT);
-	glClearColor( 0.f, 0.f, 0.5f, 0.f );
+	//---- no error
+
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClearColor(0.f, 0.f, 0.0f, 0.f);
+	
 	Terrain.render(view, projection);
+	auto error = glGetError();
+	if (error != GL_NO_ERROR) {
+		cout << "debug Error initializing OpenGL! " << gluErrorString(error) << endl;
+	}
+	shap.render(view, projection);
+	shap2.render(view, projection);
+	shap3.render(view, projection);
+
+	glDisable(GL_DEPTH_TEST);
+	//--- error 
 	GBuffer::DefaultBuffer();
-	//glDisable(GL_CULL_FACE);
-	//glDisable(GL_DEPTH_TEST);
+
 	return;
 }
 
 void close()
 {
 	//Destroy window
-	SDL_DestroyWindow( gWindow );
+	SDL_DestroyWindow(gWindow);
 	gWindow = NULL;
 
 	//Quit SDL subsystems
@@ -339,70 +452,9 @@ void close()
 void HandleEvents(SDL_Event e, float dt)
 {
 	//User requests quit
-	if ( e.type == SDL_QUIT )
+	if (e.type == SDL_QUIT)
 	{
 		quit = true;
-	}
-	else if(e.type == SDL_MOUSEMOTION)
-	{
-		if (movementSwitch)
-		{
-			if (e.motion.yrel > 5)
-			{
-				Camera.translate(10 * dt);
-			}
-			else if (e.motion.yrel < -5)
-			{
-				Camera.translate(-10 * dt);
-			}
-			
-			if (e.motion.xrel > 5)
-			{
-				Camera.strafe(10 * dt);
-			}
-			else if (e.motion.xrel < -5)
-			{
-
-				Camera.strafe(-10 * dt);
-			}
-
-		}
-	}
-	else if (e.type == SDL_MOUSEBUTTONUP)
-	{
-		// ... handle mouse clicks ...
-		if (e.button.button == SDL_BUTTON_LEFT)
-		{
-			movementSwitch = false;
-			Camera.resetVerticalSpeed();
-			Camera.resetHorizontalSpeed();
-
-		}
-		else if (e.button.button == SDL_BUTTON_MIDDLE)
-		{
-			Camera.resetFlightSpeed();
-		}
-	}
-	else if (e.type == SDL_MOUSEWHEEL)
-	{
-		if (e.wheel.y > 0) // scroll up
-		{
-
-			Camera.flight(10 * dt);
-		}
-		else if (e.wheel.y < 0) // scroll down
-		{
-
-			Camera.flight(-10 * dt);
-		}
-		
-	}
-	else if (e.type == SDL_MOUSEBUTTONDOWN)
-	{
-		if (e.button.button == SDL_BUTTON_LEFT)
-		{
-			movementSwitch = true;
-		}
 	}
 	else if (e.type == SDL_KEYDOWN)
 	{
@@ -415,26 +467,24 @@ void HandleEvents(SDL_Event e, float dt)
 		// rotate camera left
 		if (e.key.keysym.sym == SDLK_q)
 		{
-			Camera.rotateX(0.1 * dt);
+			Camera.rotateX(1 * dt);
 		}
 
 		// rotate camera right
 		if (e.key.keysym.sym == SDLK_e)
 		{
-			Camera.rotateX(-0.1 * dt);
+			Camera.rotateX(-1 * dt);
 		}
-
-		//Camera.applyRotation();
 
 		// Move left
 		if (e.key.keysym.sym == SDLK_a)
 		{
-			Camera.strafe(1 * dt);
+			Camera.strafe(10 * dt);
 		}
 		// move back
 		if (e.key.keysym.sym == SDLK_s)
 		{
-			Camera.translate(-1 * dt);
+			Camera.translate(-10 * dt);
 		}
 
 		// move right
@@ -451,27 +501,64 @@ void HandleEvents(SDL_Event e, float dt)
 
 		if (e.key.keysym.sym == SDLK_y)
 		{
-			glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 		}
 		if (e.key.keysym.sym == SDLK_u)
 		{
-			glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		}
 		if (e.key.keysym.sym == SDLK_z)
 		{
-			Camera.rotateY(-0.1 * dt);
+			Camera.rotateY(-1 * dt);
 		}
 		if (e.key.keysym.sym == SDLK_x)
 		{
-			Camera.rotateY(0.1 * dt);
+			Camera.rotateY(1 * dt);
 		}
 		if (e.key.keysym.sym == SDLK_r)
 		{
-			Camera.flight(10 * dt);
+			Camera.flight(1 * dt);
 		}
 		if (e.key.keysym.sym == SDLK_f)
 		{
-			Camera.flight(-10 * dt);
+			Camera.flight(-1 * dt);
+		}
+		if (e.key.keysym.sym == SDLK_1)
+		{
+			currentprojector = 1;
+		}
+		if (e.key.keysym.sym == SDLK_2)
+		{
+			currentprojector = 2;
+		}
+		if (e.key.keysym.sym == SDLK_3)
+		{
+			currentprojector = 3;
+		}
+		if (e.key.keysym.sym == SDLK_4)
+		{
+			currentprojector = 4;
+		}
+		if (e.key.keysym.sym == SDLK_5)
+		{
+			currentprojector = 5;
+		}
+		if (e.key.keysym.sym == SDLK_6)
+		{
+			currentprojector = 6;
+		}
+		if (e.key.keysym.sym == SDLK_7)
+		{
+			currentprojector = 7;
+		}
+		cout << currentprojector << endl;
+		if (e.key.keysym.sym == SDLK_UP)
+		{
+			projectors[currentprojector - 1].incTranslucency(0.05);
+		}
+		if (e.key.keysym.sym == SDLK_DOWN)
+		{
+			projectors[currentprojector - 1].decTranslucency(0.05);
 		}
 	}
 	else if (e.type == SDL_KEYUP)
@@ -503,8 +590,5 @@ void HandleEvents(SDL_Event e, float dt)
 		{
 			Camera.resetFlightSpeed();
 		}
-
 	}
-
-	Camera.resetVerticalSpeed();
 }

@@ -149,19 +149,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="code\include\AssetManager.h" />
-    <ClInclude Include="code\include\buffer.h" />
-    <ClInclude Include="code\include\camera.h" />
-    <ClInclude Include="code\include\framerenderer.h" />
-    <ClInclude Include="code\include\gbuffer.h" />
-    <ClInclude Include="code\include\gishandler.h" />
-    <ClInclude Include="code\include\renderable.h" />
-    <ClInclude Include="code\include\renderer.h" />
-    <ClInclude Include="code\include\shader.h" />
-    <ClInclude Include="code\include\terrain.h" />
-    <ClInclude Include="code\include\triangle.h" />
-  </ItemGroup>
-  <ItemGroup>
     <ClCompile Include="code\main.cpp" />
     <ClCompile Include="code\src\AssetManager.cpp" />
     <ClCompile Include="code\src\buffer.cpp" />
@@ -169,13 +156,32 @@
     <ClCompile Include="code\src\framerenderer.cpp" />
     <ClCompile Include="code\src\gbuffer.cpp" />
     <ClCompile Include="code\src\gishandler.cpp" />
+    <ClCompile Include="code\src\pbuffer.cpp" />
+    <ClCompile Include="code\src\projector.cpp" />
     <ClCompile Include="code\src\renderer.cpp" />
     <ClCompile Include="code\src\shader.cpp" />
+    <ClCompile Include="code\src\shape.cpp" />
     <ClCompile Include="code\src\terrain.cpp" />
     <ClCompile Include="code\src\triangle.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="code\include\AssetManager.h" />
+    <ClInclude Include="code\include\buffer.h" />
+    <ClInclude Include="code\include\camera.h" />
+    <ClInclude Include="code\include\framerenderer.h" />
+    <ClInclude Include="code\include\gbuffer.h" />
+    <ClInclude Include="code\include\gishandler.h" />
+    <ClInclude Include="code\include\pbuffer.h" />
+    <ClInclude Include="code\include\projector.h" />
+    <ClInclude Include="code\include\renderable.h" />
+    <ClInclude Include="code\include\renderer.h" />
+    <ClInclude Include="code\include\shader.h" />
+    <ClInclude Include="code\include\shape.h" />
+    <ClInclude Include="code\include\terrain.h" />
+    <ClInclude Include="code\include\triangle.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
