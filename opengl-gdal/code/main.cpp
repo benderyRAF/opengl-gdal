@@ -211,7 +211,7 @@ int main(int argc, char** argv)
 
 
 			// Update first
- 			update();
+			update();
 
 			// Now render
 			render();
@@ -396,13 +396,13 @@ void render()
 
 	fr.render(view, projection);
 
-	
+
 	glEnable(GL_BLEND);
-	
+
 
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	
-	
+
+
 	for (int i = 0; i < projectors.size(); i++)
 	{
 		projectors[i].render(view, projection);
@@ -422,7 +422,7 @@ void render()
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glClearColor(0.f, 0.f, 0.0f, 0.f);
-	
+
 	Terrain.render(view, projection);
 	auto error = glGetError();
 	if (error != GL_NO_ERROR) {
@@ -448,6 +448,7 @@ void close()
 	//Quit SDL subsystems
 	SDL_Quit();
 }
+bool movementSwitch = true;
 
 void HandleEvents(SDL_Event e, float dt)
 {
@@ -455,6 +456,67 @@ void HandleEvents(SDL_Event e, float dt)
 	if (e.type == SDL_QUIT)
 	{
 		quit = true;
+	}
+	else if (e.type == SDL_MOUSEMOTION)
+	{
+		if (movementSwitch)
+		{
+			if (e.motion.yrel > 5)
+			{
+				Camera.translate(10 * dt);
+			}
+			else if (e.motion.yrel < -5)
+			{
+				Camera.translate(-10 * dt);
+			}
+
+			if (e.motion.xrel > 5)
+			{
+				Camera.strafe(10 * dt);
+			}
+			else if (e.motion.xrel < -5)
+			{
+
+				Camera.strafe(-10 * dt);
+			}
+
+		}
+	}
+	else if (e.type == SDL_MOUSEBUTTONUP)
+	{
+		// ... handle mouse clicks ...
+		if (e.button.button == SDL_BUTTON_LEFT)
+		{
+			movementSwitch = false;
+			Camera.resetVerticalSpeed();
+			Camera.resetHorizontalSpeed();
+
+		}
+		else if (e.button.button == SDL_BUTTON_MIDDLE)
+		{
+			Camera.resetFlightSpeed();
+		}
+	}
+	else if (e.type == SDL_MOUSEWHEEL)
+	{
+		if (e.wheel.y > 0) // scroll up
+		{
+
+			Camera.flight(10 * dt);
+		}
+		else if (e.wheel.y < 0) // scroll down
+		{
+
+			Camera.flight(-10 * dt);
+		}
+
+	}
+	else if (e.type == SDL_MOUSEBUTTONDOWN)
+	{
+		if (e.button.button == SDL_BUTTON_LEFT)
+		{
+			movementSwitch = true;
+		}
 	}
 	else if (e.type == SDL_KEYDOWN)
 	{
@@ -467,24 +529,26 @@ void HandleEvents(SDL_Event e, float dt)
 		// rotate camera left
 		if (e.key.keysym.sym == SDLK_q)
 		{
-			Camera.rotateX(1 * dt);
+			Camera.rotateX(0.1 * dt);
 		}
 
 		// rotate camera right
 		if (e.key.keysym.sym == SDLK_e)
 		{
-			Camera.rotateX(-1 * dt);
+			Camera.rotateX(-0.1 * dt);
 		}
+
+		//Camera.applyRotation();
 
 		// Move left
 		if (e.key.keysym.sym == SDLK_a)
 		{
-			Camera.strafe(10 * dt);
+			Camera.strafe(1 * dt);
 		}
 		// move back
 		if (e.key.keysym.sym == SDLK_s)
 		{
-			Camera.translate(-10 * dt);
+			Camera.translate(-1 * dt);
 		}
 
 		// move right
@@ -509,56 +573,19 @@ void HandleEvents(SDL_Event e, float dt)
 		}
 		if (e.key.keysym.sym == SDLK_z)
 		{
-			Camera.rotateY(-1 * dt);
+			Camera.rotateY(-0.1 * dt);
 		}
 		if (e.key.keysym.sym == SDLK_x)
 		{
-			Camera.rotateY(1 * dt);
+			Camera.rotateY(0.1 * dt);
 		}
 		if (e.key.keysym.sym == SDLK_r)
 		{
-			Camera.flight(1 * dt);
+			Camera.flight(10 * dt);
 		}
 		if (e.key.keysym.sym == SDLK_f)
 		{
-			Camera.flight(-1 * dt);
-		}
-		if (e.key.keysym.sym == SDLK_1)
-		{
-			currentprojector = 1;
-		}
-		if (e.key.keysym.sym == SDLK_2)
-		{
-			currentprojector = 2;
-		}
-		if (e.key.keysym.sym == SDLK_3)
-		{
-			currentprojector = 3;
-		}
-		if (e.key.keysym.sym == SDLK_4)
-		{
-			currentprojector = 4;
-		}
-		if (e.key.keysym.sym == SDLK_5)
-		{
-			currentprojector = 5;
-		}
-		if (e.key.keysym.sym == SDLK_6)
-		{
-			currentprojector = 6;
-		}
-		if (e.key.keysym.sym == SDLK_7)
-		{
-			currentprojector = 7;
-		}
-		cout << currentprojector << endl;
-		if (e.key.keysym.sym == SDLK_UP)
-		{
-			projectors[currentprojector - 1].incTranslucency(0.05);
-		}
-		if (e.key.keysym.sym == SDLK_DOWN)
-		{
-			projectors[currentprojector - 1].decTranslucency(0.05);
+			Camera.flight(-10 * dt);
 		}
 	}
 	else if (e.type == SDL_KEYUP)
@@ -590,5 +617,8 @@ void HandleEvents(SDL_Event e, float dt)
 		{
 			Camera.resetFlightSpeed();
 		}
+
 	}
+
+	Camera.resetVerticalSpeed();
 }
